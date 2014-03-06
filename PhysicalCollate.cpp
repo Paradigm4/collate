@@ -26,13 +26,13 @@
  * END_COPYRIGHT
  */
 #include "query/Operator.h"
-#include <log4cxx/logger.h>
+//#include <log4cxx/logger.h>
 
 namespace scidb
 {
 
 // Logger for operator. static to prevent visibility of variable outside of file
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scidb.qproc.collate"));
+//static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scidb.qproc.collate"));
 
 class PhysicalCollate : public PhysicalOperator
 {

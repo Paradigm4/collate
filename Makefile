@@ -1,3 +1,4 @@
+
 ifeq ($(SCIDB),) 
   X := $(shell which scidb 2>/dev/null)
   ifneq ($(X),)
