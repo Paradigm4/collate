@@ -95,6 +95,7 @@ cerr << "write cell position "  << CoordsToStr(_outputCellPosition) << "  " << _
                {
 cerr << "cazart!\n";
                    _outputChunkIterator->flush();   // Flush this chunk, we're done with it
+                   _outputChunkIterator.reset();
                }
             }
         }
@@ -114,8 +115,17 @@ cerr << "cazart!\n";
     virtual ArrayDistribution getOutputDistribution(vector<ArrayDistribution> const& inputDistributions,
                                                     vector<ArrayDesc> const& inputSchemas) const
     {
-// XXX Is this right? Should it be the distribution of the output array?
        return ArrayDistribution(psUndefined);
+    }
+
+    /**
+      * [Optimizer API] Determine if operator changes result chunk distribution.
+      * @param sourceSchemas shapes of all arrays that will given as inputs.
+      * @return true if will changes output chunk distribution, false if otherwise
+      */
+    virtual bool changesDistribution(std::vector<ArrayDesc> const& sourceSchemas) const
+    {
+        return true;
     }
 
     shared_ptr< Array> execute(vector< shared_ptr< Array> >& inputArrays, shared_ptr<Query> query)

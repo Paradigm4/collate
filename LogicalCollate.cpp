@@ -37,12 +37,10 @@ public:
         LogicalOperator(logicalName, alias)
     {
         ADD_PARAM_INPUT()
-        ADD_PARAM_SCHEMA()
     }
 
 // Relax this to simply check that they are all of the same type
-// But add checks on chunk sizes (all output columns in one chunk)
-    void checkInputAttributes(ArrayDesc const& inputSchema)
+    size_t checkInputAttributes(ArrayDesc const& inputSchema)
     {
         Attributes const& attrs = inputSchema.getAttributes(true);
         size_t const nAttrs = attrs.size();
@@ -54,19 +52,22 @@ public:
                       << "collate only accepts an input with attributes of type double";
             }
         }
+        return (size_t) nAttrs;
     }
 
     ArrayDesc inferSchema(vector< ArrayDesc> schemas, shared_ptr< Query> query)
     {
-        assert(schemas.size() == 1);
-        assert(_parameters.size() == 1);
+        ArrayDesc const& inputSchema = schemas[0];
+        size_t nAttrs = checkInputAttributes(inputSchema);
+        Attributes outputAttributes;
+// XXX loosen up double value requirement
+        outputAttributes.push_back(AttributeDesc(0, "val", TID_DOUBLE, 0, 0));
+        outputAttributes = addEmptyTagAttribute(outputAttributes);
+        Dimensions outputDimensions;
+        outputDimensions.push_back(DimensionDesc("i", 0, inputSchema.getDimensions()[0].getEndMax(), inputSchema.getDimensions()[0].getChunkInterval(), 0));
+        outputDimensions.push_back(DimensionDesc("j", 0, nAttrs, nAttrs, 0));
+        return ArrayDesc(inputSchema.getName(), outputAttributes, outputDimensions);
 
-        ArrayDesc outputArray = ((boost::shared_ptr<OperatorParamSchema>&) _parameters[0])->getSchema();
-
-        Attributes const& outputAttributes = outputArray.getAttributes();
-        Dimensions const& outputDimensions = outputArray.getDimensions();
-
-        return ArrayDesc(outputArray.getName(), outputAttributes, outputDimensions);
     }
 };
 
