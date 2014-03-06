@@ -28,8 +28,6 @@
 #include "query/Operator.h"
 #include <log4cxx/logger.h>
 
-#include <stdio.h>
-
 namespace scidb
 {
 
@@ -51,7 +49,6 @@ public:
     private:
         shared_ptr<Array> _output;
         Coordinates _outputCellPosition;
-        bool _initialWrite;
         int64_t _chunkSizeColumn;
         int64_t _chunkSizeRow;
         shared_ptr<ArrayIterator> _outputArrayIterator;
@@ -61,8 +58,7 @@ public:
     public:
         OutputWriter(ArrayDesc const& schema, shared_ptr<Query>& query):
             _output(new MemArray(schema, query)),
-            _outputCellPosition(2, 0),    //--> {0,0}; //make sure output doesn't start at coord < 0
-            _initialWrite(true),
+            _outputCellPosition(2, -1),  // Make sure (-1,-1) is not a valid coordinate 
             _chunkSizeColumn(schema.getDimensions()[1].getChunkInterval()),
             _chunkSizeRow(schema.getDimensions()[0].getChunkInterval()),
             _outputArrayIterator(_output->getIterator(0)) //the chunk iterator is NULL at the start
@@ -82,27 +78,32 @@ public:
          * increment coords
          * write
          */
-        void writeValue(Value const& val, shared_ptr<Query>& query)
+
+        void writeValue(Coordinates row, Value const& val, shared_ptr<Query>& query)
         {
-cerr << "writeValue "  << CoordsToStr(_outputCellPosition) << "\n";
-            if (_initialWrite)
+cerr << "writeValue row " << row[0] << " value=" <<  val.getDouble() << "\n";
+            if ((row[0] % _chunkSizeRow == 0) && (_outputCellPosition[1] < 1))
             {
+cerr << "new chunk\n";
+               // We're going to write to a new chunk
+               _outputCellPosition[1] = 0;      // Set the column to zero
+               _outputCellPosition[0] = row[0]; // Set the row
+               // Now initialize the chunk iterator
                _outputChunkIterator = _outputArrayIterator->newChunk(_outputCellPosition).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);   
-               _initialWrite = false;
             }
-            else if(_outputCellPosition[0] % _chunkSizeRow == 0)
-            {
-               _outputChunkIterator->flush();
-               _outputChunkIterator = _outputArrayIterator->newChunk(_outputCellPosition).getIterator(query, ChunkIterator::
-SEQUENTIAL_WRITE);
-            }
+            _outputCellPosition[0] = row[0];  // Set the row
             _outputChunkIterator->setPosition(_outputCellPosition);
+cerr << "write cell position "  << CoordsToStr(_outputCellPosition) << "  " << _chunkSizeColumn << "\n";
             _outputChunkIterator->writeItem(val);
-            _outputCellPosition[1]++;
-            if(_outputCellPosition[1] > _chunkSizeColumn)
+            _outputCellPosition[1]++;         // Increment the column
+            if(_outputCellPosition[1] >= _chunkSizeColumn)
             {
-               _outputCellPosition[0]++;
-               _outputCellPosition[1] = 0;
+               _outputCellPosition[1] = 0;    // Reset the column
+               if(++_outputCellPosition[0] % _chunkSizeRow == 0)
+               {
+cerr << "cazart!\n";
+                   _outputChunkIterator->flush();   // Flush this chunk, we're done with it
+               }
             }
         }
 
@@ -132,8 +133,8 @@ SEQUENTIAL_WRITE);
         ArrayDesc const& inputSchema = inputArray->getArrayDesc();
         AttributeID const nAttrs = inputSchema.getAttributes(true).size();
 
-fprintf(stderr, "--------------\n");
-fprintf(stderr, "nAttrs = %d\n", (int)nAttrs);
+cerr << "--------------\n";
+cerr << "nAttrs = " <<  (int)nAttrs << "\n";
         vector<string> attributeNames(nAttrs, "");
         vector<shared_ptr<ConstArrayIterator> > saiters(nAttrs);
         vector<shared_ptr<ConstChunkIterator> > sciters(nAttrs);
@@ -152,8 +153,9 @@ fprintf(stderr, "nAttrs = %d\n", (int)nAttrs);
                 while( !sciters[i]->end())
                 {
                     Value const& val = sciters[i]->getItem();
-fprintf(stderr, "val %s = %f\n",attributeNames[i].c_str(),val.getDouble());
-outputArrayWriter.writeValue(val, query);
+Coordinates row = sciters[i]->getPosition();
+cerr << "row=" << row[0] << " attr="<<i << " val=" << val.getDouble() << "\n";
+outputArrayWriter.writeValue(row, val, query);
                     ++(*sciters[i]);
                 }
             }
