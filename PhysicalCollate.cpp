@@ -66,17 +66,14 @@ public:
         }
 
 
-/* row[0] contains the row coordinate of the chunk to write to
- * val is the value to be written
- * query is the query
- *
- */
+        /* row[0] contains the row coordinate of the chunk to write to
+         * val is the value to be written
+         * query is the query
+         */
         void writeValue(Coordinates row, Value const& val, shared_ptr<Query>& query)
         {
-cerr << "writeValue row " << row[0] << " value=" <<  val.getDouble() << "\n";
             if ((row[0] % _chunkSizeRow == 0) && (_outputCellPosition[1] < 1))
             {
-cerr << "new chunk\n";
                // We're going to write to a new chunk
                _outputCellPosition[1] = 0;      // Set the column to zero
                _outputCellPosition[0] = row[0]; // Set the row
@@ -85,7 +82,6 @@ cerr << "new chunk\n";
             }
             _outputCellPosition[0] = row[0];  // Set the row
             _outputChunkIterator->setPosition(_outputCellPosition);
-cerr << "write cell position "  << CoordsToStr(_outputCellPosition) << "  " << _chunkSizeColumn << "\n";
             _outputChunkIterator->writeItem(val);
             _outputCellPosition[1]++;         // Increment the column
             if(_outputCellPosition[1] >= _chunkSizeColumn)
@@ -93,7 +89,6 @@ cerr << "write cell position "  << CoordsToStr(_outputCellPosition) << "  " << _
                _outputCellPosition[1] = 0;    // Reset the column
                if(++_outputCellPosition[0] % _chunkSizeRow == 0)
                {
-cerr << "cazart!\n";
                    _outputChunkIterator->flush();   // Flush this chunk, we're done with it
                    _outputChunkIterator.reset();
                }
@@ -134,8 +129,6 @@ cerr << "cazart!\n";
         shared_ptr<Array> inputArray = inputArrays[0];
         ArrayDesc const& inputSchema = inputArray->getArrayDesc();
         AttributeID const nAttrs = inputSchema.getAttributes(true).size();
-
-cerr << "Instance " <<  query->getInstanceID() << "\n";
         vector<string> attributeNames(nAttrs, "");
         vector<shared_ptr<ConstArrayIterator> > saiters(nAttrs);
         vector<shared_ptr<ConstChunkIterator> > sciters(nAttrs);
@@ -162,7 +155,6 @@ cerr << "Instance " <<  query->getInstanceID() << "\n";
                     {
                         Value const& val = sciters[i]->getItem();
                         Coordinates row = sciters[i]->getPosition();
-cerr << "row=" << row[0] << " attr="<<i << " val=" << val.getDouble() << "\n";
                         outputArrayWriter.writeValue(row, val, query);
                         ++(*sciters[i]);
                     }

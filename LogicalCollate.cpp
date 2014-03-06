@@ -25,6 +25,42 @@
  *
  * END_COPYRIGHT
  */
+
+/**
+ * @file LogicalCollate.cpp
+ * A sample UDO that converts a 1-d array with one or more uniformly-typed
+ * attributes into a 2-d array with a single attribute (a matrix).  The columns
+ * of the output matrix correspond to the attributes in the input array.
+ *
+ * @brief The operator: collate(A).
+ *
+ * @par Synopsis: collate(A).
+ *  
+ * @par Summary:
+ *   <br>
+ *   Convert a 1-d array with one or more uniformly typed attributes into a
+ *   2-d array with a single attribute whose columns correspond to the input
+ *   array attributes.
+ *
+ * @par Input:
+ *   - A : <a_1, a_2, ..., a_n>[i=0:*, chunksize, 0] (The input 1-d array with n attributes)
+ *
+ * @par Output array:
+ *   <br> <
+ *   <br>   val
+ *   <br> >
+ *   <br> [
+ *   <br>   i=0:*, chunksize, 0,
+ *   <br>   j=0:n, n+1, 0
+ *   <br> ]
+ *
+ * @par Examples:
+ * <br> load_library('collate')
+ * <br> collate(apply(build(<v:double>[i=0:9,3,0],i),w,i+0.5))
+ *
+ * @author apoliakov@paradigm4.com, blewis@paradigm4.com
+ */
+
 #include "query/Operator.h"
 
 namespace scidb
@@ -40,32 +76,34 @@ public:
     }
 
 // Relax this to simply check that they are all of the same type
-    size_t checkInputAttributes(ArrayDesc const& inputSchema)
+    void checkInputAttributes(ArrayDesc const& inputSchema)
     {
         Attributes const& attrs = inputSchema.getAttributes(true);
         size_t const nAttrs = attrs.size();
-        for (AttributeID i =0; i<nAttrs; ++i)
+        bool ok = true;
+        for (AttributeID i = 1; i<nAttrs; ++i)
         {
-            if (attrs[i].getType() != TID_DOUBLE)
-            {
-                throw SYSTEM_EXCEPTION(SCIDB_SE_OPERATOR, SCIDB_LE_ILLEGAL_OPERATION)
-                      << "collate only accepts an input with attributes of type double";
-            }
+            ok = ok && attrs[i].getType() == attrs[0].getType();
         }
-        return (size_t) nAttrs;
+        if(!ok)
+        {
+            throw SYSTEM_EXCEPTION(SCIDB_SE_OPERATOR, SCIDB_LE_ILLEGAL_OPERATION)
+                  << "collate requires that all input array attributes have the same type";
+        }
     }
 
     ArrayDesc inferSchema(vector< ArrayDesc> schemas, shared_ptr< Query> query)
     {
         ArrayDesc const& inputSchema = schemas[0];
-        size_t nAttrs = checkInputAttributes(inputSchema);
+        checkInputAttributes(inputSchema);
+        Attributes const& attrs = inputSchema.getAttributes(true);
+        size_t nAttrs  = attrs.size();
         Attributes outputAttributes;
-// XXX loosen up double value requirement
-        outputAttributes.push_back(AttributeDesc(0, "val", TID_DOUBLE, 0, 0));
+        outputAttributes.push_back(AttributeDesc(0, "val", attrs[0].getType(), 0, 0));
         outputAttributes = addEmptyTagAttribute(outputAttributes);
         Dimensions outputDimensions;
         outputDimensions.push_back(DimensionDesc("i", 0, inputSchema.getDimensions()[0].getEndMax(), inputSchema.getDimensions()[0].getChunkInterval(), 0));
-        outputDimensions.push_back(DimensionDesc("j", 0, nAttrs, nAttrs, 0));
+        outputDimensions.push_back(DimensionDesc("j", 0, nAttrs-1, nAttrs, 0));
         return ArrayDesc(inputSchema.getName(), outputAttributes, outputDimensions);
 
     }
