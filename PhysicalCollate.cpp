@@ -50,8 +50,10 @@ public:
     {
     private:
         shared_ptr<Array> _output;
-        Coordinates _outputChunkPosition;
         Coordinates _outputCellPosition;
+        bool _initialWrite;
+        int64_t _chunkSizeColumn;
+        int64_t _chunkSizeRow;
         shared_ptr<ArrayIterator> _outputArrayIterator;
         shared_ptr<ChunkIterator> _outputChunkIterator;
         Value _dval;
@@ -59,18 +61,54 @@ public:
     public:
         OutputWriter(ArrayDesc const& schema, shared_ptr<Query>& query):
             _output(new MemArray(schema, query)),
-            _outputChunkPosition(2, -1),
-            _outputCellPosition(2, 0),
+            _outputCellPosition(2, 0),    //--> {0,0}; //make sure output doesn't start at coord < 0
+            _initialWrite(true),
+            _chunkSizeColumn(schema.getDimensions()[1].getChunkInterval()),
+            _chunkSizeRow(schema.getDimensions()[0].getChunkInterval()),
             _outputArrayIterator(_output->getIterator(0)) //the chunk iterator is NULL at the start
         {
 // XXX initialize the chunk iterator here?
         }
 
-
-        void writeValue(double const val, shared_ptr<Query>& query)
+        /**
+         * if this is the first call
+         *    initialize _outputChunkIterator
+         *
+         * else if we need to open a new chunk
+         *    flush _outputChunkIterator
+         *    set _outputChunkIterator to next chunk
+         *
+         * 
+         * set position on _outputChunkIterator
+         * increment coords
+         * write
+         */
+        void writeValue(Value const& val, shared_ptr<Query>& query)
         {
+            if (_initialWrite)
+            {
+               _outputChunkIterator = _outputArrayIterator->newChunk(_outputCellPosition).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);   
+               _initialWrite = false;
+            }
+            else if(_outputCellPosition[0] % _chunkSizeRow == 0)
+            {
+               _outputChunkIterator->flush();
+               _outputChunkIterator = _outputArrayIterator->newChunk(_outputCellPosition).getIterator(query, ChunkIterator::
+SEQUENTIAL_WRITE);
+            }
+            _outputChunkIterator->setPosition(_outputCellPosition);
+            _outputChunkIterator->writeItem(val);
+            _outputCellPosition[1]++;
+            if(_outputCellPosition[1] > _chunkSizeColumn)
+            {
+               _outputCellPosition[0]++;
+               _outputCellPosition[1] = 0;
+            }
+/*
             Coordinates chunkPosition = _outputCellPosition;
             _output->getArrayDesc().getChunkPositionFor(chunkPosition);
+            
+            //true at the very first writeValue call AND true when we have a full chunk
             if (chunkPosition[1] != _outputChunkPosition[1])  //first chunk, or a new chunk
             {
                 if (_outputChunkIterator)
@@ -86,6 +124,7 @@ public:
             _outputChunkIterator->setPosition(_outputCellPosition);
             _outputChunkIterator->writeItem(_dval);
             _outputCellPosition[1]++;
+*/
         }
 
         shared_ptr<Array> finalize()
@@ -133,7 +172,8 @@ fprintf(stderr, "--------------\n");
                 {
                     Value const& val = sciters[i]->getItem();
 fprintf(stderr, "val %s = %f\n",attributeNames[i].c_str(),val.getDouble());
-outputArrayWriter.writeValue(val.getDouble(), query);
+
+outputArrayWriter.writeValue(val, query);
                     ++(*sciters[i]);
                 }
             }

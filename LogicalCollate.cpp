@@ -61,7 +61,6 @@ public:
         assert(schemas.size() == 1);
         assert(_parameters.size() == 1);
 
-// I don't understand the mumbo jumbo to get to the destination array descriptor...
         ArrayDesc outputArray = ((boost::shared_ptr<OperatorParamSchema>&) _parameters[0])->getSchema();
 
         Attributes const& outputAttributes = outputArray.getAttributes();
