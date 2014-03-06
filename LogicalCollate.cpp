@@ -73,6 +73,15 @@ public:
         LogicalOperator(logicalName, alias)
     {
         ADD_PARAM_INPUT()
+        _usage = "collate(A)\n"
+                 "where:\n"
+                 "A is a 1-d matrix with one or more uniformly-typed attributes.\n\n"
+                 "collate(A) returns a 2-d array that copies the attributes of A into\n"
+                 "columns of an output matrix.\n\n"
+                 "Note: The output matrix row dimension will have a chunk size equal\n"
+                 "to the input array, and column chunk size equal to the number of columns.\n\n"
+                 "EXAMPLE:\n\n"
+                 "collate(apply(build(<v:double>[i=0:9,3,0],i),w,i+0.5))";
     }
 
 // Relax this to simply check that they are all of the same type
