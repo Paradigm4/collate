@@ -141,13 +141,22 @@ cerr << "Instance " <<  query->getInstanceID() << "\n";
             {
                 vector<double> inputData;
                 sciters[i] = saiters[i]->getChunk().getConstIterator(ChunkIterator::IGNORE_EMPTY_CELLS);
-                while( !sciters[i]->end())
+            }
+            bool ok = true;
+            while(ok)
+            {
+                ok = false;
+                for (AttributeID i = 0; i<nAttrs; ++i)
                 {
-                    Value const& val = sciters[i]->getItem();
-Coordinates row = sciters[i]->getPosition();
+                    if(!sciters[i]->end())
+                    {
+                        Value const& val = sciters[i]->getItem();
+                        Coordinates row = sciters[i]->getPosition();
 cerr << "row=" << row[0] << " attr="<<i << " val=" << val.getDouble() << "\n";
-outputArrayWriter.writeValue(row, val, query);
-                    ++(*sciters[i]);
+                        outputArrayWriter.writeValue(row, val, query);
+                        ++(*sciters[i]);
+                    }
+                    ok = ok || !sciters[i]->end();
                 }
             }
             for (AttributeID i = 0; i<nAttrs; ++i)
