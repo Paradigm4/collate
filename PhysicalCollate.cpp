@@ -67,7 +67,6 @@ public:
             _chunkSizeRow(schema.getDimensions()[0].getChunkInterval()),
             _outputArrayIterator(_output->getIterator(0)) //the chunk iterator is NULL at the start
         {
-// XXX initialize the chunk iterator here?
         }
 
         /**
@@ -85,6 +84,7 @@ public:
          */
         void writeValue(Value const& val, shared_ptr<Query>& query)
         {
+cerr << "writeValue "  << CoordsToStr(_outputCellPosition) << "\n";
             if (_initialWrite)
             {
                _outputChunkIterator = _outputArrayIterator->newChunk(_outputCellPosition).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);   
@@ -104,27 +104,6 @@ SEQUENTIAL_WRITE);
                _outputCellPosition[0]++;
                _outputCellPosition[1] = 0;
             }
-/*
-            Coordinates chunkPosition = _outputCellPosition;
-            _output->getArrayDesc().getChunkPositionFor(chunkPosition);
-            
-            //true at the very first writeValue call AND true when we have a full chunk
-            if (chunkPosition[1] != _outputChunkPosition[1])  //first chunk, or a new chunk
-            {
-                if (_outputChunkIterator)
-                {
-                    _outputChunkIterator->flush(); //flush the last chunk if any
-                }
-                _outputChunkPosition = chunkPosition;
-                //open the new chunk
-                _outputChunkIterator = _outputArrayIterator->newChunk(chunkPosition).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);
-            }
-            //write
-            _dval.setDouble(val);
-            _outputChunkIterator->setPosition(_outputCellPosition);
-            _outputChunkIterator->writeItem(_dval);
-            _outputCellPosition[1]++;
-*/
         }
 
         shared_ptr<Array> finalize()
@@ -152,6 +131,9 @@ SEQUENTIAL_WRITE);
         shared_ptr<Array> inputArray = inputArrays[0];
         ArrayDesc const& inputSchema = inputArray->getArrayDesc();
         AttributeID const nAttrs = inputSchema.getAttributes(true).size();
+
+fprintf(stderr, "--------------\n");
+fprintf(stderr, "nAttrs = %d\n", (int)nAttrs);
         vector<string> attributeNames(nAttrs, "");
         vector<shared_ptr<ConstArrayIterator> > saiters(nAttrs);
         vector<shared_ptr<ConstChunkIterator> > sciters(nAttrs);
@@ -161,7 +143,6 @@ SEQUENTIAL_WRITE);
             saiters[i] = inputArray->getConstIterator(i);
         }
 
-fprintf(stderr, "--------------\n");
         while (!saiters[0]->end())
         {
             for (AttributeID i = 0; i<nAttrs; ++i)
@@ -172,7 +153,6 @@ fprintf(stderr, "--------------\n");
                 {
                     Value const& val = sciters[i]->getItem();
 fprintf(stderr, "val %s = %f\n",attributeNames[i].c_str(),val.getDouble());
-
 outputArrayWriter.writeValue(val, query);
                     ++(*sciters[i]);
                 }
