@@ -108,7 +108,7 @@ public:
         Attributes const& attrs = inputSchema.getAttributes(true);
         size_t nAttrs  = attrs.size();
         Attributes outputAttributes;
-        outputAttributes.push_back(AttributeDesc(0, "val", attrs[0].getType(), 0, 0));
+        outputAttributes.push_back(AttributeDesc(0, "val", attrs[0].getType(), AttributeDesc::IS_NULLABLE, 0));
         outputAttributes = addEmptyTagAttribute(outputAttributes);
         Dimensions outputDimensions;
         outputDimensions.push_back(DimensionDesc("i", 0, inputSchema.getDimensions()[0].getEndMax(), inputSchema.getDimensions()[0].getChunkInterval(), 0));
