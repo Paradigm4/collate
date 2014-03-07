@@ -65,20 +65,12 @@ public:
         {
         }
 
-        /**
-         * if this is the first call
-         *    initialize _outputChunkIterator
-         *
-         * else if we need to open a new chunk
-         *    flush _outputChunkIterator
-         *    set _outputChunkIterator to next chunk
-         *
-         * 
-         * set position on _outputChunkIterator
-         * increment coords
-         * write
-         */
 
+/* row[0] contains the row coordinate of the chunk to write to
+ * val is the value to be written
+ * query is the query
+ *
+ */
         void writeValue(Coordinates row, Value const& val, shared_ptr<Query>& query)
         {
 cerr << "writeValue row " << row[0] << " value=" <<  val.getDouble() << "\n";
@@ -133,8 +125,7 @@ cerr << "cazart!\n";
         ArrayDesc const& inputSchema = inputArray->getArrayDesc();
         AttributeID const nAttrs = inputSchema.getAttributes(true).size();
 
-cerr << "--------------\n";
-cerr << "nAttrs = " <<  (int)nAttrs << "\n";
+cerr << "Instance " <<  query->getInstanceID() << "\n";
         vector<string> attributeNames(nAttrs, "");
         vector<shared_ptr<ConstArrayIterator> > saiters(nAttrs);
         vector<shared_ptr<ConstChunkIterator> > sciters(nAttrs);
