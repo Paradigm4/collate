@@ -88,4 +88,4 @@ cp libcollate.so /opt/scidb/13.12/lib/scidb/plugins
 
 iquery -aq "load_library('collate')"
 ```
-Remember to copy the plugin to all you SciDB cluster nodes.
+Remember to copy the plugin to all your SciDB cluster nodes.
