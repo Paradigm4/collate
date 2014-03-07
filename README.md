@@ -5,7 +5,7 @@ collate
 Map muti-attribute 1-d arrays into matrices.
 
 ## Rationale
-Complicated input data are often loaded into table-like 1-d multi-attribute arrays.  Sometimes we want to assemble uniformly-typed subsets of the array attributes into a matrix, for example to compute correlations or regressions. The `collate` operator does that.
+Complicated input data are often loaded into table-like 1-d multi-attribute arrays.  Sometimes we want to assemble uniformly-typed subsets of the array attributes into a matrix, for example to compute correlations or regressions. The collate operator does that.
 
 There are other ways to do this, but the new collate operator will generally be more efficient and easier to use. See one very clever alternate approach on the SciDB forum here: http://scidb.org/forum/viewtopic.php?f=11&t=1289&sid=4d0553b1d3deccefdef065401bffdefc 
 
