@@ -111,7 +111,7 @@ public:
         outputAttributes.push_back(AttributeDesc(0, "val", attrs[0].getType(), AttributeDesc::IS_NULLABLE, 0));
         outputAttributes = addEmptyTagAttribute(outputAttributes);
         Dimensions outputDimensions;
-        outputDimensions.push_back(DimensionDesc("i", 0, inputSchema.getDimensions()[0].getEndMax(), inputSchema.getDimensions()[0].getChunkInterval(), 0));
+        outputDimensions.push_back(DimensionDesc("i", inputSchema.getDimensions()[0].getStart(), inputSchema.getDimensions()[0].getEndMax(), inputSchema.getDimensions()[0].getChunkInterval(), 0));
         outputDimensions.push_back(DimensionDesc("j", 0, nAttrs-1, nAttrs, 0));
         return ArrayDesc(inputSchema.getName(), outputAttributes, outputDimensions);
 
