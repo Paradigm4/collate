@@ -52,6 +52,7 @@ public:
         int64_t _chunkSizeColumn;
         int64_t _chunkSizeRow;
         int64_t _startRow;
+        int64_t _lastChunk;
         shared_ptr<ArrayIterator> _outputArrayIterator;
         shared_ptr<ChunkIterator> _outputChunkIterator;
         Value _dval;
@@ -63,7 +64,7 @@ public:
             _chunkSizeColumn(schema.getDimensions()[1].getChunkInterval()),
             _chunkSizeRow(schema.getDimensions()[0].getChunkInterval()),
             _startRow(schema.getDimensions()[0].getStart()),
-            _outputArrayIterator(_output->getIterator(0)) //the chunk iterator is NULL at the start
+            _outputArrayIterator(_output->getIterator(0)) // the chunk iterator is NULL at the start
         {
         }
 
@@ -74,11 +75,18 @@ public:
          */
         void writeValue(Coordinates row, Value const& val, shared_ptr<Query>& query)
         {
-            if (((row[0] - _startRow) % _chunkSizeRow == 0) && (_outputCellPosition[1] < 1))
+            if(_outputCellPosition[1]<0) _lastChunk = -1;
+            if ((row[0]/_chunkSizeRow != _lastChunk) && (_outputCellPosition[1] < 1))
             {
+               if(_lastChunk> -1)
+               {
+                   _outputChunkIterator->flush();   // Flush this chunk, we're done with it
+                   _outputChunkIterator.reset();
+               }
                // We're going to write to a new chunk
                _outputCellPosition[1] = 0;      // Set the column to zero
                _outputCellPosition[0] = row[0]; // Set the row
+               _lastChunk = _outputCellPosition[0] / _chunkSizeRow;
                // Now initialize the chunk iterator
                _outputChunkIterator = _outputArrayIterator->newChunk(_outputCellPosition).getIterator(query, ChunkIterator::SEQUENTIAL_WRITE);   
             }
@@ -89,10 +97,12 @@ public:
             if(_outputCellPosition[1] >= _chunkSizeColumn)
             {
                _outputCellPosition[1] = 0;    // Reset the column
-               if((++_outputCellPosition[0] - _startRow) % _chunkSizeRow == 0)
+               ++_outputCellPosition[0]; // Increment the row
+               if(_outputCellPosition[0] / _chunkSizeRow != _lastChunk)
                {
                    _outputChunkIterator->flush();   // Flush this chunk, we're done with it
                    _outputChunkIterator.reset();
+                   _lastChunk = -1;  // avoid double flush and reset (see above)
                }
             }
         }
