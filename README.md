@@ -1,3 +1,7 @@
+# NOTE
+As of SciDB version 14.7 (July, 2014 release), this functionality is included with SciDB in the new 'unfold' operator. I will leave this here for users that need this in older versions of SciDB, but this code will no longer be maintained or updated.
+
+
 collate
 =======
 
